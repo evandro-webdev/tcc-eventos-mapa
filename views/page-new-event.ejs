@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Publicar um evento</title>
+
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/page-forms.css">
+    <link href='https://unpkg.com/boxicons@2.0.7/css/boxicons.min.css' rel='stylesheet'>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+   integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+   crossorigin=""/>
+</head>
+<body>
+    
+    <%- include ('partials/header.ejs')%>
+
+    <main class="page-forms">
+            
+        <div class="form new-event">
+
+            <form method="POST" action="<%=action%>" enctype="<%= enctype %>">
+                <h1><%= title %> evento</h1>
+                <h2>Preencha com as informações do evento</h2>
+
+                <hr>
+
+                <h2>Clique em um ponto do mapa para adicionar a localização</h2>
+
+                <div id="mapid"></div>
+                <input type="hidden" name="lat" value="<%= event.lat %>">
+                <input type="hidden" name="lng" value="<%= event.lng %>">
+                <input type="hidden" name="uid" id="uid">
+                <input type="hidden" name="username" id="username">
+
+                <label for="name-event">Nome</label>
+                <i class='bx bx-purchase-tag-alt'></i>
+                <input type="text" name="name" id="name" placeholder="Digite o nome do evento" value="<%= event.name %>">
+
+                <label for="description">Descrição</label>
+                <textarea name="description" id="description" placeholder="Descrição do evento"><%= event.description %></textarea>
+
+                <label for="address">Endereço</label>
+                <i class='bx bxs-map'></i>
+                <input type="text" name="address" id="address" placeholder="Endereço onde será realizado" value="<%= event.address %>">
+
+                <div class="small-input">
+                    <div>
+                        <label>Data</label>
+                        <input 
+                        type="date"
+                        name="date"
+                        id="date"
+                        value="<%= event.date != null ? event.date.getFullYear()+'-'+(event.date.getMonth()+1).toString().padStart(2, '0')+'-'+(event.date.getDate()+1).toString().padStart(2, '0') : null %>">
+                    </div>
+
+                    <div>
+                        <label>Horário</label>
+                        <input type="time" name="time" id="time" value="<%= event.time %>">
+                    </div>
+                </div>
+
+                <div class="small-input">
+                    <div>
+                        <label>Tipo de Evento</label>
+                        <i class='bx bxs-flag-alt'></i>
+                        <select name="category" id="category">
+                            <option>Selecione</option>
+                            <option>Futebol</option>
+                            <option>Tecnologia</option>
+                            <option>Ciclismo</option>
+                            <option>Beneficente</option>
+                        </select>
+                        <input type="hidden" id="current-category" value="<%= event.category %>">
+                    </div>
+
+                    <div>
+                        <label for="price">Entrada</label>
+                        <i class='bx bx-money' ></i>
+                        <input type="text" name="price" id="price" class="price" placeholder="Preço" value="<%= event.price %>">
+                    </div>
+                </div>
+
+                <label>Imagem</label>
+                <label id="file" for="img">Escolha uma imagem</label>
+                <input type="file" name="image" id="img" accept="image/*">
+
+                <label for="video">Vídeo Informativo</label>
+                <i class='bx bxl-youtube'></i>
+                <input type="text" name="video" id="video" placeholder="Insira o link do vídeo do youtube" value="<%= event.video %>">
+
+                <label for="wpp">Whatsapp</label>
+                <i class='bx bxl-whatsapp' ></i>
+                <input type="text" name="whatsapp" id="wpp" class="wpp" placeholder="Whatsapp para contato" value="<%= event.whatsapp %>">
+
+                <button type="submit"><%= title %></button>
+            </form>
+
+        </div>
+
+    </main>
+
+
+
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+   integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+   crossorigin=""></script>
+
+    <script src="/scripts/page-new-event.js"></script>
+
+    <%- include('partials/firebase.ejs') %>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha256-4+XzXVhsDmqanXGHaHvgh1gMQKX40OUvDEBTu8JcmNs=" crossorigin="anonymous"></script>
+    <script src="/scripts/jquery.mask.min.js"></script>
+
+    <script>
+        
+
+        let userId = document.querySelector('#uid')
+        let username = document.querySelector('#username')
+        let category = document.querySelectorAll('#category option')
+        let currentCategory = document.querySelector('#current-category')
+
+        firebase.auth().onAuthStateChanged(user => {
+            if(!user){
+                location.replace('/')
+            }else{
+                userId.value = user.uid
+                username.value = user.displayName
+            }
+        })
+
+        var maskBehavior = function (val) {
+        return val.replace(/\D/g, '').length === 11 ? '(00) 00000-0000' : '(00) 0000-00009';
+        },
+        options = {onKeyPress: function(val, e, field, options) {
+                field.mask(maskBehavior.apply({}, arguments), options);
+            }
+        };
+
+        $('.wpp').mask(maskBehavior, options)
+        $('.price').mask('000.000.000.000.000,00', {reverse: true})
+
+        category.forEach(option => {
+            if(option.value == currentCategory.value){
+                option.setAttribute('selected', 'selected')
+            }
+        })
+
+    </script>
+
+</body>
+</html>
